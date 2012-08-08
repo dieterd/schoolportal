@@ -1,15 +1,14 @@
 <?php
 /*
-  Plugin Name: DVM Laatste foto's
-  Plugin URI: http://www.vanmonckhoven.be
-  Description: Toont laatste x foto sets van flickr.
-  Version: 0.1
+  Plugin Name: Schoolportal Flickr previews
+  Plugin URI: http://www.schoolportal.be
+  Description: Show x number of last photosets from flickr
+  Version: 0.2
   Author: Dieter Deramoudt
-  Author URI: http://www.deramoudt.com
+
  */
 
 include_once 'SP_Widget.php';
-require_once("phpFlickr/phpFlickr.php");
 
 // configuration 
 $username = "vanmonckhoven";
@@ -24,7 +23,7 @@ class SP_PicPreview_Widget extends SP_Widget {
     public $w_name = 'SP_PicPreview_Widget';
     public $w_id = 'SP_PicPreview_Widget';
 
-    function DvmLaatsteFotosWidget() {
+    function SP_PicPreview_Widget() {
         parent::WP_Widget(false, $name = 'SP_PicPreview_Widget');
     }
 
@@ -39,59 +38,47 @@ class SP_PicPreview_Widget extends SP_Widget {
 
         parent::doWidgetHeader("Nieuwste fotoreeksen", $style);
 
+        ?>
 
+  <script>
+      
+    var xmlHttp = null;
+    var theUrl = "http://api.flickr.com/services/rest/?method=flickr.photosets.getList&api_key=6d52f2455cb6b25827cd01f8ee7247dc&user_id=21240450@N07&format=json&page=1&per_page=8&nojsoncallback=1" ;
 
-        $f = new phpFlickr($apiKey, $apiSecret);
-        $nsidarray = $f->people_findByUsername($username);
-        $nsid = $nsidarray['nsid'];
+    xmlHttp = new XMLHttpRequest();
+    xmlHttp.open( "GET", theUrl, false );
+    xmlHttp.send( null );
+        
+    var sets = eval ("(" + xmlHttp.responseText + ")");
+    
+    $perrij = 2 ;
+    $rij = 0 ;
+        
+    for (var i=0; i < sets.photosets.photoset.length; i++) {
+      photoset = sets.photosets.photoset[i];
+     
+       t_url = "http://farm" + photoset.farm + ".static.flickr.com/" + 
+        photoset.server + "/" + photoset.primary + "_" + photoset.secret + "_t.jpg";
+    
+       title =  photoset.title._content.replace(/['"]/g,'');
+              
+      s = "<img width=\"95\" border=0 src=\""+t_url+"\" alt=\""+title+"\" title=\""+title+"\"   >" ;
+      
+      document.writeln("<a target=\"_blank\" href=\"/wp-content/plugins/dvm_widgets/FlickrViewerSet.php?set="+photoset.id+"\">") ;
+      document.writeln(s);
+      document.writeln("</a>") ;
+      $rij = $rij + 1;
+      if ($rij >= $perrij) { $rij = 0; document.writeln("<br>") ; }
+          
 
-        $photosets = $f->photosets_getList($nsid);
+     
+    }
 
-        if (!empty($photosets)) {
+  
+  </script>
+ 
 
-            $i = 0;
-            $rij = 0;
-            ?>
-
-            <table border=0 align="center">
-                <tr>
-
-                    <?php
-                    foreach ($photosets['photoset'] as $set) {
-                        ?>
-
-                        <td align="center">
-                            <a target="_blank"  href="http://www.vanmonckhoven.be/wp-content/plugins/dvm_widgets/FlickrViewerSet.php?set=<?php echo $set['id']; ?>">
-                                <img width="95" border=0 alt="<?php echo $set['title']; ?>" title="<?php echo $set['title']; ?>" src="http://farm<?php echo $set['farm']; ?>.static.flickr.com/<?php echo $set['server']; ?>/<?php echo $set['primary']; ?>_<?php echo $set['secret']; ?>_t.jpg">
-                            </a>
-
-
-                        </td>
-
-                        <?php
-                        $i = $i + 1;
-                        if ($i >= $aantal) {
-                            break;
-                        }
-
-                        $rij = $rij + 1;
-                        if ($rij >= $perrij) {
-                            $rij = 0;
-                            ?>
-                        </tr>
-                        <tr>
-
-                            <?php
-                        }
-                    }
-                    ?>
-
-                </tr>
-            </table>
-            <?php
-        } else {
-            echo "<!--GEEN SETS-->";
-        }
+<?php
         
         parent::doWidgetFooter() ;
     }
